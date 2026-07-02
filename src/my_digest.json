@@ -1,0 +1,325 @@
+{
+  "name": "my_digest",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Aggregate').first().json }}",
+        "options": {
+          "systemMessage": "Ты — ассистент для создания ежедневных DevOps дайджестов. \n\nТы получаешь агрегированные новости из разных источников. \n\nТВОЯ ЗАДАЧА: создать дайджест в СТРОГОМ ФОРМАТЕ:\n\n1. ОБЩЕЕ САММАРИ: один абзац, который описывает основные темы и тенденции среди всех новостей\n\n2. ПО КАНАЛАМ:\n[Название канала 1] - [количество постов] постов\nпост 1: [краткое описание, 1-2 предложения], [ссылка]\nпост 2: [краткое описание, 1-2 предложения], [ссылка]\n\n[Название канала 2] - [количество постов] постов\nпост 1: [краткое описание, 1-2 предложения], [ссылка]\n\nВСЕГДА СОБЛЮДАЙ ЭТОТ ФОРМАТ! Не добавляй ничего лишнего."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        688,
+        128
+      ],
+      "id": "e953e9b4-666f-4c81-a091-7ac71b08d0e8",
+      "name": "AI Agent",
+      "alwaysOutputData": true,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "openai/gpt-oss-120b",
+          "mode": "list",
+          "cachedResultName": "openai/gpt-oss-120b"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        320
+      ],
+      "id": "111559b7-3f60-41b9-9555-8eed3501b865",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "sUCRoi1DUFdSWDHE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-1003387684101",
+        "text": "={{ $json.cleanText }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        128
+      ],
+      "id": "370899a6-b71c-45c0-95aa-9e025e8f55d8",
+      "name": "Telegram",
+      "webhookId": "71608277-364f-425a-b20c-af1a3a8a664f",
+      "credentials": {
+        "telegramApi": {
+          "id": "2kmYzwIcvqzrf5a9",
+          "name": "giggs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $input.first().json.response || $input.first().json.output || '';\n\nconst cleanText = rawText\n  // Убираем всю разметку\n  .replace(/\\*\\*/g, '')\n  .replace(/\\*/g, '')\n  .replace(/__/g, '')\n  .replace(/_/g, '')\n  .replace(/```/g, '')\n  .replace(/`/g, '')\n  .replace(/<[^>]*>/g, '')\n  .replace(/\\[([^\\]]+)\\]\\([^)]+\\)/g, '$1')\n  .replace(/&[^;]+;/g, '')\n  // Ограничиваем длину для Telegram\n  .substring(0, 4000)\n  // Убираем лишние переносы\n  .replace(/\\n\\s*\\n\\s*\\n/g, '\\n\\n')\n  .trim();\n\nreturn [{ json: { cleanText } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        128
+      ],
+      "id": "ade26a69-4754-4da5-82ce-90c7e6d0d9b7",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.data }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        384
+      ],
+      "id": "c0e9fbe9-a09e-4ada-903a-e7fc7eb45d6a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        96
+      ],
+      "id": "4b609cc6-0127-46ea-b36e-0025adb82c7d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://fetchrss.com/feed/1vNBzu2ys5sw1vQBE09XvFhC.rss",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        320
+      ],
+      "id": "4b2b5ec0-6e72-46e9-a18c-f19b2a187e46",
+      "name": "DevOps Ready | IT1"
+    },
+    {
+      "parameters": {
+        "url": "https://fetchrss.com/feed/1vNBzu2ys5sw1vQBG421VG1a.rss",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        160
+      ],
+      "id": "07edc335-f745-4dc6-ae9d-7987655b16f4",
+      "name": "Devops by REBRAIN"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        304,
+        128
+      ],
+      "id": "4d73fb9d-5f97-4290-9f79-26e268c6b258",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "https://fetchrss.com/feed/aSMn4qDGCVhiaSTbSfo1Ewwj.rss",
+        "options": {
+          "customFields": ""
+        }
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "028ee5ae-ca05-4829-9e54-3abe9daefb99",
+      "name": "DevOps"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        480,
+        144
+      ],
+      "id": "2c08b5b7-96c1-4cf1-aa57-c167d52f44de",
+      "name": "Aggregate"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "DevOps",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Devops by REBRAIN",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DevOps Ready | IT1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Devops by REBRAIN": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DevOps Ready | IT1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "DevOps": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2d771fc2-31c5-4e29-be65-58d9789e416d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "013a782f068687f7fd7157f2818493a208c28397ff8ef3c297afe7f9fed27b37"
+  },
+  "id": "WuOuxHL1VN42buux",
+  "tags": []
+}

@@ -1,0 +1,261 @@
+{
+  "name": "my_vacancies",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "38463673-ed34-46ac-9717-9a0b4c9b31cb",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://api.hh.ru/vacancies",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "DeVops"
+            },
+            {
+              "name": "per_page",
+              "value": "10"
+            },
+            {
+              "name": "search_field",
+              "value": "name"
+            },
+            {
+              "name": "area",
+              "value": "113"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        192,
+        0
+      ],
+      "id": "cfc4760d-0160-4e98-b817-33a97825e38c",
+      "name": "Get Vacancies List"
+    },
+    {
+      "parameters": {
+        "jsCode": "let allSkills = [];\nlet vacancyCount = 0;\n\nconsole.log('=== DEBUG: INPUT DATA ===');\nconsole.log('Input items count:', $input.all().length);\n\nfor (const item of $input.all()) {\n  console.log('Processing item:', item);\n\n  // Варианты: текст может быть в output или result\n  const text = item.json.text || item.json.output || item.json.result;\n\n  if (text && text.length > 0) {\n    vacancyCount++;\n    \n    const skillsArray = text.split(',')\n      .map(skill => skill.trim())\n      .filter(skill => skill.length > 0 && skill.toLowerCase() !== 'devops');\n    \n    console.log(`Вакансия ${vacancyCount}:`, skillsArray);\n    allSkills = allSkills.concat(skillsArray);\n  }\n}\n\nconsole.log('Всего навыков собрано:', allSkills.length);\n\nconst skillCount = {};\nallSkills.forEach(skill => {\n  const normalized = skill.toLowerCase().trim();\n  skillCount[normalized] = (skillCount[normalized] || 0) + 1;\n});\n\nconst sortedSkills = Object.entries(skillCount)\n  .sort((a, b) => b[1] - a[1])\n  .slice(0, 15)\n  .map(([skill, count]) => [skill.charAt(0).toUpperCase() + skill.slice(1), count]);\n\nreturn [{ \n  sortedSkills,\n  totalVacancies: vacancyCount\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        16
+      ],
+      "id": "c9c70710-36bf-4482-baba-f7d60bae9221",
+      "name": "Aggregate Skills",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chatId": "-1003444660727",
+        "text": "=*Еженедельный дайджест DevOps* 🚀\n\nВакансий проанализировано: {{ $json.totalVacancies }}\n\n{{ $json.sortedSkills && $json.sortedSkills.length > 0 ? $json.sortedSkills.map((skill, index) => `${index + 1}. ${skill[0]} — ${skill[1]}`).join('\\n') : \"Нет данных по навыкам\" }}\n\nУдачи в поисках! 💫",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        16
+      ],
+      "id": "5ad8aa96-6187-4c49-beeb-412ea7711c67",
+      "name": "Telegram",
+      "webhookId": "d1b1147a-83bc-41e1-aefb-b256744c0add",
+      "credentials": {
+        "telegramApi": {
+          "id": "2kmYzwIcvqzrf5a9",
+          "name": "giggs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Извлеки ВСЕ упомянутые технологии и инструменты из текста вакансии:\n\nТЕКСТ ДЛЯ АНАЛИЗА:\n{{ $json.name }}\n{{ $json.requirement }} \n{{ $json.responsibility }}\n\nИЩИ ТОЛЬКО ТЕХНИЧЕСКИЕ НАВЫКИ:\n- Контейнеризация: Docker, Kubernetes\n- Облака: AWS, Azure, GCP\n- Инфраструктура: Terraform, Ansible, CI/CD\n- Базы данных: PostgreSQL, MySQL, MongoDB\n- Языки: Python, Bash, Shell\n- Системы: Linux, Ubuntu, CentOS\n- Мониторинг: Prometheus, Grafana\n\nВерни ТОЛЬКО найденные технологии через запятую, БЕЗ нумерации и пояснений.\n\nПРИМЕР ОТВЕТА: Docker, Kubernetes, AWS, Linux, Python",
+        "options": {
+          "systemMessage": "Ты — ассистент для анализа DevOps вакансий. Твоя задача — извлекать только технические навыки, инструменты и технологии.\n\nПроанализируй текст вакансии и составь статистику по техническим навыкам.\n\nТЕКСТ ВАКАНСИИ:\nНазвание: {{ $json.name }}\nТребования: {{ $json.requirement }}\nОбязанности: {{ $json.responsibility }}\n\nЗАДАЧА:\n1. Найди ВСЕ упомянутые технологии и инструменты\n2. Посчитай, сколько раз каждый навык встречается в тексте\n3. Отсортируй по убыванию частоты\n4. Верни ТОЛЬКО топ-15 навыков в формате: Навык: количество\n\nПРИМЕР ОТВЕТА:\nDocker: 5\nKubernetes: 4\nAWS: 3\nLinux: 3\nPython: 2\nTerraform: 2\nGit: 2\nAnsible: 1\nPrometheus: 1\nGrafana: 1"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        800,
+        0
+      ],
+      "id": "825a47de-a039-40e4-b27c-0f2491ca02e5",
+      "name": "AI Agent",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "GigaChat/GigaChat-2-Max",
+          "mode": "list",
+          "cachedResultName": "GigaChat/GigaChat-2-Max"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        784,
+        224
+      ],
+      "id": "37fba022-b9aa-4b6c-8edd-f01941a3d72e",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "sUCRoi1DUFdSWDHE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  return {\n    json: {\n      id: item.json.id || \"\",\n      name: item.json.name || \"\",\n      requirement: item.json.snippet?.requirement || \"\",\n      responsibility: item.json.snippet?.responsibility || \"\"\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "3027b3e3-1c07-43e9-8ed4-891f4efdb636",
+      "name": "Code",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "items",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        384,
+        0
+      ],
+      "id": "4d9e9d54-fff2-4090-8f08-0d5e69f7ee04",
+      "name": "Split Out",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Vacancies List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Vacancies List": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Skills",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Skills": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e35984ea-f37a-47f3-a1dd-0dde7d1881e4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "013a782f068687f7fd7157f2818493a208c28397ff8ef3c297afe7f9fed27b37"
+  },
+  "id": "WwLAUhExq8jAd1Xn",
+  "tags": []
+}

@@ -1,0 +1,472 @@
+{
+  "name": "my_mentor",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Ты — персональный ментор. ТОЧНО следуй этим инструкциям!\n\n===== ШАГ 1: ПЕРВЫЙ ВОПРОС =====\nКогда диалог начинается, скажи ТОЧНО ЭТО (не меняй ни одного слова):\n\"Чему бы ты хотел научиться в рамках работы над текущим учебным проектом или в рамках подготовки к собеседованию и трудоустройству? Уточни уровень владения темой.\"\n\n===== ШАГ 2: ПЛАН ОБУЧЕНИЯ =====\nКогда пользователь ответит, создай план в ТОЧНОМ формате:\nПЛАН_ОБУЧЕНИЯ:\nТема 1: [Название темы]\n[понятие 1, понятие 2, понятие 3...]\nТема 2: [Название темы]\n[понятие 1, понятие 2, понятие 3...]\n\nПосле плана напиши: \"План готов! Начинаем обучение?\"\n\n===== ШАГ 3: СОЗДАНИЕ ПОСТОВ =====\nЕсли пользователь говорит \"да\", используй поиск:\ntavily(query=\"[первое понятие из плана] объяснение\")\n\n===== ВАЖНОЕ ПРАВИЛО =====\nДля ЛЮБОЙ информации из интернета используй ТОЛЬКО: tavily(query=\"...\")"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -864,
+        208
+      ],
+      "id": "c478dba0-c034-4e7f-9df1-ba6b4ff77a58",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "openai/gpt-oss-120b",
+          "mode": "list",
+          "cachedResultName": "openai/gpt-oss-120b"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        448
+      ],
+      "id": "8d46dad6-f0e2-44e8-af74-a6025b28d77d",
+      "name": "GigaChat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "sUCRoi1DUFdSWDHE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9be9360e-5362-4a3b-875a-94bf9a10d069",
+              "leftValue": "={{ $json.requiresSearch }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -288,
+        208
+      ],
+      "id": "d34f95d3-3bc2-4d16-8266-fb8647a1e6f2",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Создай образовательный пост на основе этих результатов поиска.\n\nРезультаты поиска Tavily:\n{{JSON.stringify($json, null, 2)}}\n\nСделай пост:\n1. Полезным и информативным\n2. Не слишком длинным (3-5 абзацев)\n3. Понятным для начинающих\nФормат вывода: просто текст поста, без дополнительных пояснений.",
+        "options": {
+          "systemMessage": "=Ты получаешь результаты веб-поиска Tavily в JSON.\nИспользуй поле answer и results, чтобы дать пользователю краткий, понятный ответ на его исходный вопрос.\nОбязательно опирайся только на информацию из Tavily, не придумывай факты.\n\nТы создаешь образовательный пост на основе результатов поиска.\nПиши простой текст без форматирования.\nНЕ используй:\n- # для заголовков\n- * или _ для выделения\n- ` для кода\n- Специальные символы\n\nПросто пиши обычный текст с абзацами."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        464,
+        0
+      ],
+      "id": "702883e5-5fdf-4845-87e5-5a25a606a15a",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "openai/gpt-oss-120b",
+          "mode": "list",
+          "cachedResultName": "openai/gpt-oss-120b"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        176
+      ],
+      "id": "1660ce72-2781-41ef-9224-f11f5b13313a",
+      "name": "GigaChat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "sUCRoi1DUFdSWDHE",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.TelegramText || $json.output || $json.message?.content }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "MarkdownV2"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "4a037d3c-23aa-4708-877f-ccd1127072ef",
+      "name": "Send a text message1",
+      "webhookId": "5ea66125-4ee9-497f-b338-a243205189f3",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjhRMv98NVZhAVdD",
+          "name": "mentor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1264,
+        208
+      ],
+      "id": "ef7e8baa-b728-44c3-bc60-dde9c667887b",
+      "name": "Telegram Trigger",
+      "webhookId": "86a08536-ef1a-47e4-a072-1a9617951b79",
+      "credentials": {
+        "telegramApi": {
+          "id": "bjhRMv98NVZhAVdD",
+          "name": "mentor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n   \"query\": \"={{$json.query}}\",\n   \"search_depth\": \"basic\",\n   \"include_answer\": true\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "2cd72ff2-10ff-48ed-a6af-29d944028010",
+      "name": "Tavily"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ ($json.output || $json.TelegramText || \"\").replace(/`/g, \"'\").replace(/</g, '(').replace(/>/g, ')') }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        336
+      ],
+      "id": "55feca7f-ec6d-4df7-93aa-e9f5961cad09",
+      "name": "Send a text message",
+      "webhookId": "5ea66125-4ee9-497f-b338-a243205189f3",
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "bjhRMv98NVZhAVdD",
+          "name": "mentor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Static Data - полная версия с отслеживанием прогресса\nconst message = $input.first().json.message?.text || \"\";\nconst chatId = $input.first().json.message?.chat?.id;\n\n// Получаем Static Data\nconst staticData = $getWorkflowStaticData('global');\n\n// ============ ИНИЦИАЛИЗАЦИЯ ============\nif (!staticData.state) {\n  staticData.state = \"start\"; // start, waiting_topic, plan_ready, learning, completed\n  staticData.learningPlan = [];\n  staticData.allConcepts = []; // Все понятия из плана\n  staticData.usedConcepts = []; // Уже использованные понятия\n  staticData.currentConceptIndex = 0;\n  staticData.userTopic = \"\";\n  staticData.userLevel = \"новичок\";\n  staticData.lastUserMessage = \"\";\n  staticData.planCreated = false;\n}\n\n// Сохраняем последнее сообщение пользователя\nstaticData.lastUserMessage = message;\n\nconsole.log(`📝 Сообщение: \"${message}\"`);\nconsole.log(`🔧 Состояние: ${staticData.state}`);\nconsole.log(`📌 Использовано понятий: ${staticData.usedConcepts?.length || 0}`);\n\n// ============ ЛОГИКА СОСТОЯНИЙ ============\nif (staticData.state === \"start\" && /привет|hello|hi|старт/i.test(message.toLowerCase())) {\n  staticData.state = \"waiting_topic\";\n  console.log(\"🔄 Переход: start → waiting_topic\");\n} \nelse if (staticData.state === \"waiting_topic\" && message.length > 10) {\n  // Пользователь указал тему\n  staticData.userTopic = message;\n  \n  // Определяем уровень\n  if (message.toLowerCase().includes(\"новичок\")) staticData.userLevel = \"новичок\";\n  else if (message.toLowerCase().includes(\"средний\")) staticData.userLevel = \"средний\";\n  else if (message.toLowerCase().includes(\"продвинут\")) staticData.userLevel = \"продвинутый\";\n  \n  staticData.state = \"topic_received\";\n  console.log(`🔄 Переход: waiting_topic → topic_received (уровень: ${staticData.userLevel})`);\n}\nelse if (staticData.state === \"plan_ready\") {\n  // Проверяем подтверждение плана\n  const confirmationWords = ['да', 'ок', 'хорошо', 'начинаем', 'готов', 'yes', 'ok', 'супер'];\n  const isConfirmation = confirmationWords.some(word => \n    message.toLowerCase().includes(word)\n  );\n  \n  if (isConfirmation) {\n    staticData.state = \"learning\";\n    console.log(\"✅ Пользователь подтвердил план! Переход: plan_ready → learning\");\n  }\n}\nelse if (staticData.state === \"learning\" && message.includes(\"?\")) {\n  // Пользователь задает вопрос - сохраняем тему вопроса\n  const question = message.toLowerCase();\n  \n  if (question.includes(\"тип\") || question.includes(\"данн\")) {\n    staticData.lastQuestionTopic = \"типы данных\";\n  } else if (question.includes(\"оператор\")) {\n    staticData.lastQuestionTopic = \"операторы\";\n  } else if (question.includes(\"функц\")) {\n    staticData.lastQuestionTopic = \"функции\";\n  } else if (question.includes(\"объект\")) {\n    staticData.lastQuestionTopic = \"объекты\";\n  } else if (question.includes(\"дом\")) {\n    staticData.lastQuestionTopic = \"DOM\";\n  } else {\n    staticData.lastQuestionTopic = \"JavaScript\";\n  }\n  \n  console.log(`❓ Задан вопрос по теме: ${staticData.lastQuestionTopic}`);\n}\n\n// ============ ВОЗВРАЩАЕМ ДАННЫЕ ============\nreturn [{\n  json: {\n    chatInput: message, // Просто передаем сообщение\n    message: { text: message },\n    chatId: chatId,\n    staticData: staticData,\n    currentState: staticData.state\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        208
+      ],
+      "id": "1f532b66-7d2b-4208-9737-e355c0be6439",
+      "name": "Static Data"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "chat_history"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        352
+      ],
+      "id": "2df44917-54c7-4268-88f1-9cc4d5d3801f",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "// УЛЬТРА-ПРОСТОЙ РАБОЧИЙ КОД\nconst item = $input.first();\nconst chatId = $('Telegram Trigger').item.json.message.chat.id;\n\n// 1. Берем текст\nlet text = item.json.TelegramText || item.json.output || \"Пост\";\n\n// 2. ЗАМЕНЯЕМ ВСЕ спецсимволы на ПРОБЕЛЫ (включая дефис)\ntext = text.replace(/[-{}()<>\\[\\]#*_`~\\\\=+!.]/g, ' ');\n\n// 3. Убираем все ссылки\ntext = text.replace(/https?:\\/\\/\\S+/g, 'ссылка ');\n\n// 4. Убираем лишние пробелы\ntext = text.replace(/\\s+/g, ' ').trim();\n\n// 5. Берем первые 4000 символов\ntext = text.substring(0, 4000);\n\n// 6. Если мало текста\nif (text.length < 50) {\n  text = \"Образовательный материал по JavaScript подготовлен на основе информации из интернета.\";\n}\n\nreturn [{\n  json: {\n    TelegramText: text,\n    chatId: chatId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        0
+      ],
+      "id": "da02f1b6-6476-4c85-9f9a-4e59a869578d",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Получаем ответ AI\nconst data = $input.first().json;\nconst aiResponse = data.output || data.message?.content || \"\";\n\nconsole.log(\"🤖 AI ответил:\", aiResponse.substring(0, 200));\n\n// Получаем Static Data\nconst staticData = $getWorkflowStaticData('global');\n\n//ПАРСИМ ПЛАН ОБУЧЕНИЯ\nif (aiResponse.includes(\"ПЛАН_ОБУЧЕНИЯ:\")) {\n  console.log(\"🎯 План создан\");\n  \n  // Обновляем состояние\n  staticData.state = \"plan_ready\";\n  staticData.planCreated = true;\n  \n  // Парсим все понятия из плана\n  const lines = aiResponse.split('\\n');\n  const allConcepts = [];\n  \n  for (const line of lines) {\n    const trimmed = line.trim();\n    \n    // Ищем строки с понятиями в квадратных скобках\n    if (trimmed.includes('[') && trimmed.includes(']')) {\n      const match = trimmed.match(/\\[([^\\]]+)\\]/);\n      if (match) {\n        const concepts = match[1].split(',').map(c => c.trim()).filter(c => c.length > 0);\n        allConcepts.push(...concepts);\n        console.log(`📌 Найдены понятия: ${concepts.join(', ')}`);\n      }\n    }\n  }\n  \n  // Сохраняем все понятия\n  if (allConcepts.length > 0) {\n    staticData.allConcepts = allConcepts;\n    staticData.usedConcepts = []; // Сбрасываем использованные\n    staticData.currentConceptIndex = 0;\n    \n    console.log(`✅ Сохранено ${allConcepts.length} понятий:`, allConcepts);\n  }\n  \n  // Возвращаем план пользователю\n  return [{\n    json: {\n      hasTavilyFormat: false,\n      requiresSearch: \"false\",\n      output: aiResponse\n    }\n  }];\n}\n\n//ПРОВЕРЯЕМ TAVILY ЗАПРОС\nconst tavilyRegex = /tavily\\(query=\"([^\"]+)\"\\)/;\nconst match = aiResponse.match(tavilyRegex);\n\nif (match) {\n  console.log(\"✅ Найден tavily запрос:\", match[1]);\n  return [{\n    json: {\n      hasTavilyFormat: true,\n      requiresSearch: \"true\",\n      query: match[1]\n    }\n  }];\n}\n\n//ОБРАБОТКА \"ДА\" ПОСЛЕ ПЛАНА\nconst lastMessage = staticData.lastUserMessage || \"\";\n\nif (lastMessage.toLowerCase().includes(\"да\") && staticData.state === \"plan_ready\") {\n  console.log(\"✅ Пользователь подтвердил план\");\n  \n  // Находим следующее неиспользованное понятие\n  let nextConcept = \"\";\n  \n  if (staticData.allConcepts && staticData.allConcepts.length > 0) {\n    // Ищем первое неиспользованное понятие\n    for (let i = 0; i < staticData.allConcepts.length; i++) {\n      const concept = staticData.allConcepts[i];\n      if (!staticData.usedConcepts.includes(concept)) {\n        nextConcept = concept;\n        staticData.currentConceptIndex = i;\n        break;\n      }\n    }\n    \n    // Если все использованы, начинаем сначала\n    if (!nextConcept && staticData.allConcepts.length > 0) {\n      nextConcept = staticData.allConcepts[0];\n      staticData.usedConcepts = [];\n      staticData.currentConceptIndex = 0;\n    }\n    \n    // Отмечаем как использованное\n    if (nextConcept) {\n      if (!staticData.usedConcepts) staticData.usedConcepts = [];\n      staticData.usedConcepts.push(nextConcept);\n      console.log(`📝 Понятие \"${nextConcept}\" отмечено как использованное`);\n      console.log(`📊 Прогресс: ${staticData.usedConcepts.length}/${staticData.allConcepts.length}`);\n    }\n  }\n  \n  // Если не нашли понятие, используем дефолтное\n  if (!nextConcept) {\n    nextConcept = \"переменные в JavaScript\";\n  }\n  \n  // Создаем поисковый запрос\n  const searchQuery = `${nextConcept} объяснение для ${staticData.userLevel} уровня`;\n  console.log(`🔍 Создаю запрос: ${searchQuery}`);\n  \n  // Меняем состояние\n  staticData.state = \"learning\";\n  \n  return [{\n    json: {\n      hasTavilyFormat: true,\n      requiresSearch: \"true\",\n      query: searchQuery,\n      currentConcept: nextConcept\n    }\n  }];\n}\n\n//ОБРАБОТКА ВОПРОСОВ ПОЛЬЗОВАТЕЛЯ\n// Проверяем, является ли сообщение вопросом\nconst isQuestion = lastMessage.includes(\"?\") || \n                   /что|как|объясни|расскажи|про/i.test(lastMessage);\n\nif (isQuestion && staticData.state === \"learning\") {\n  console.log(\"❓ Пользователь задал вопрос:\", lastMessage);\n  \n  // Определяем тему вопроса\n  let topic = \"\";\n  const question = lastMessage.toLowerCase();\n  \n  if (question.includes(\"тип\") || question.includes(\"данн\")) {\n    topic = \"типы данных в JavaScript\";\n  } else if (question.includes(\"оператор\")) {\n    topic = \"операторы в JavaScript\";\n  } else if (question.includes(\"функц\")) {\n    topic = \"функции в JavaScript\";\n  } else if (question.includes(\"объект\")) {\n    topic = \"объекты в JavaScript\";\n  } else if (question.includes(\"дом\")) {\n    topic = \"DOM в JavaScript\";\n  } else if (staticData.lastQuestionTopic) {\n    topic = `${staticData.lastQuestionTopic} в JavaScript`;\n  } else {\n    topic = \"JavaScript\";\n  }\n  \n  //Создаем поисковый запрос\n  const searchQuery = `${topic} объяснение для ${staticData.userLevel} уровня`;\n  console.log(`🔍 Создаю запрос на вопрос: ${searchQuery}`);\n  \n  return [{\n    json: {\n      hasTavilyFormat: true,\n      requiresSearch: \"true\",\n      query: searchQuery\n    }\n  }];\n}\n\n//ПРОВЕРЯЕМ ЗАВЕРШЕНИЕ ОБУЧЕНИЯ\nif (staticData.allConcepts && staticData.usedConcepts && \n    staticData.allConcepts.length > 0 && \n    staticData.usedConcepts.length >= staticData.allConcepts.length) {\n  \n  console.log(\"🎉 Все понятия изучены!\");\n  staticData.state = \"completed\";\n  \n  return [{\n    json: {\n      hasTavilyFormat: false,\n      requiresSearch: \"false\",\n      output: \"🎉 Поздравляю! Вы изучили все понятия плана! Что хотите изучить дальше?\"\n    }\n  }];\n}\n\n//ОБЫЧНЫЙ ОТВЕТ\nconsole.log(\"📤 Отправляю обычный ответ\");\nreturn [{\n  json: {\n    hasTavilyFormat: false,\n    requiresSearch: \"false\",\n    output: aiResponse\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -512,
+        208
+      ],
+      "id": "91219b17-67ab-4df9-8e4f-4908a8d5f511",
+      "name": "Code(Plan and questions)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Подготовка данных для второго AI Agent\nconst tavilyResults = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\n\n// Находим текущее понятие\nlet currentConcept = \"\";\nlet currentTopic = \"\";\n\nif (staticData.learningPlan && staticData.learningPlan.length > 0) {\n  // Ищем неиспользованное понятие\n  for (const topic of staticData.learningPlan) {\n    for (const concept of topic.concepts) {\n      if (!staticData.completedConcepts.includes(concept)) {\n        currentConcept = concept;\n        currentTopic = topic.name;\n        break;\n      }\n    }\n    if (currentConcept) break;\n  }\n}\n\nreturn [{\n  json: {\n    concept: currentConcept,\n    topic: currentTopic,\n    originalTavilyData: tavilyResults,\n    completedConcepts: staticData.completedConcepts?.length || 0,\n    totalConcepts: staticData.learningPlan ? \n      staticData.learningPlan.reduce((sum, t) => sum + t.concepts.length, 0) : 0\n  }\n}];\n\n\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "9a2811c5-e140-4911-9a10-384517475779",
+      "name": "Code prep req"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Просто передаем ответ в Telegram\nconst item = $input.first();\n\n// Берем ответ AI\nconst response = item.json.output || \"Ответ не получен\";\n\n// Получаем chatId\nconst chatId = item.json.chatId || \"unknown\";\n\n// Убираем tavily запросы если они есть\nlet telegramText = response.replace(/tavily\\(query=\"[^\"]+\"\\)/g, '').trim();\n\nreturn [{\n  json: {\n    TelegramText: telegramText,\n    chatId: chatId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        336
+      ],
+      "id": "38e5c193-3e72-409e-bfa0-4a1a35df96eb",
+      "name": "Code prep questions"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GigaChat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code(Plan and questions)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Tavily",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code prep questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GigaChat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Static Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily": {
+      "main": [
+        [
+          {
+            "node": "Code prep req",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Static Data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code(Plan and questions)": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code prep req": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code prep questions": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e9160fc0-9dfc-4757-a71b-e10d98187470",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "013a782f068687f7fd7157f2818493a208c28397ff8ef3c297afe7f9fed27b37"
+  },
+  "id": "OiaOovDeGRHL4857",
+  "tags": []
+}
